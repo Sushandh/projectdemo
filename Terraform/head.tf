@@ -4,7 +4,7 @@ provider "aws" {
 
 # ---------------- S3 BUCKET ----------------
 resource "aws_s3_bucket" "website" {
-  bucket = "my-demoproject-01" # 🔥 change this (must be unique)
+  bucket = "my-simple-site-123456" # 🔥 change this (must be unique)
 }
 
 resource "aws_s3_bucket_website_configuration" "config" {
@@ -52,7 +52,7 @@ resource "aws_sns_topic" "alerts" {
 resource "aws_sns_topic_subscription" "email" {
   topic_arn = aws_sns_topic.alerts.arn
   protocol  = "email"
-  endpoint  = "ktsushandh978@gmail.com" # 🔥 change this
+  endpoint  = "your-email@example.com" # 🔥 change this
 }
 
 # ---------------- CLOUDWATCH ALARM ----------------

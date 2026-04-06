@@ -4,7 +4,7 @@ provider "aws" {
 
 # ---------------- S3 BUCKET ----------------
 resource "aws_s3_bucket" "website" {
-  bucket = "my-simple-site-123456" # 🔥 change this (must be unique)
+  bucket = "my-simple-project-001" # 🔥 change this (must be unique)
 }
 
 resource "aws_s3_bucket_website_configuration" "config" {

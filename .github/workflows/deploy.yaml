@@ -33,4 +33,4 @@ jobs:
 
       - name: Upload Website to S3
         run: |
-          aws s3 sync applicationcode/ s3://my-simple-site-123456
+          aws s3 sync applicationcode/ s3://my-simple-project-001

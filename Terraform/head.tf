@@ -4,9 +4,10 @@ provider "aws" {
 
 # ---------------- S3 BUCKET ----------------
 resource "aws_s3_bucket" "website" {
-  bucket = "my-simple-project-02" # 🔥 change this (must be unique)
+  bucket = "my-simple-project-001" # 🔥 must be globally unique
 }
 
+# ---------------- WEBSITE CONFIG ----------------
 resource "aws_s3_bucket_website_configuration" "config" {
   bucket = aws_s3_bucket.website.id
 
@@ -15,7 +16,35 @@ resource "aws_s3_bucket_website_configuration" "config" {
   }
 }
 
+# ---------------- PUBLIC ACCESS SETTINGS ----------------
+resource "aws_s3_bucket_public_access_block" "public" {
+  bucket = aws_s3_bucket.website.id
 
+  block_public_acls       = false
+  block_public_policy     = false
+  restrict_public_buckets = false
+  ignore_public_acls      = false
+}
+
+# ---------------- BUCKET POLICY (FIXED ORDER) ----------------
+resource "aws_s3_bucket_policy" "policy" {
+  bucket = aws_s3_bucket.website.id
+
+  depends_on = [
+    aws_s3_bucket_public_access_block.public
+  ]
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Sid       = "PublicReadGetObject",
+      Effect    = "Allow",
+      Principal = "*",
+      Action    = ["s3:GetObject"],
+      Resource  = "${aws_s3_bucket.website.arn}/*"
+    }]
+  })
+}
 
 # ---------------- METRICS ----------------
 resource "aws_s3_bucket_metric" "metrics" {
@@ -60,19 +89,19 @@ resource "aws_cloudwatch_dashboard" "dashboard" {
   dashboard_body = jsonencode({
     widgets = [
       {
-        type = "metric",
-        x = 0,
-        y = 0,
-        width = 12,
+        type   = "metric",
+        x      = 0,
+        y      = 0,
+        width  = 12,
         height = 6,
         properties = {
           metrics = [
             ["AWS/S3", "NumberOfObjects", "BucketName", aws_s3_bucket.website.bucket, "StorageType", "AllStorageTypes"]
           ],
           period = 300,
-          stat = "Average",
+          stat   = "Average",
           region = "us-east-1",
-          title = "S3 Objects"
+          title  = "S3 Objects"
         }
       }
     ]
@@ -81,5 +110,5 @@ resource "aws_cloudwatch_dashboard" "dashboard" {
 
 # ---------------- OUTPUT ----------------
 output "website_url" {
-  value = aws_s3_bucket.website.website_endpoint
+  value = aws_s3_bucket_website_configuration.config.website_endpoint
 }

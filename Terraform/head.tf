@@ -18,7 +18,7 @@ provider "aws" {
 
 # ---------------- WEBSITE BUCKET ----------------
 resource "aws_s3_bucket" "website" {
-  bucket = "my-simple-project-0001"
+  bucket = "my-simple-project-001"
 }
 
 resource "aws_s3_bucket_website_configuration" "config" {

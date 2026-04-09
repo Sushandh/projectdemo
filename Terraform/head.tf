@@ -1,10 +1,13 @@
 terraform {
   required_providers {
     aws = {
-      source  = "hashicorp/aws"
+      source = "hashicorp/aws"
     }
     archive = {
-      source  = "hashicorp/archive"
+      source = "hashicorp/archive"
+    }
+    local = {
+      source = "hashicorp/local"
     }
   }
 }
@@ -13,9 +16,9 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# ---------------- S3 WEBSITE ----------------
+# ---------------- WEBSITE BUCKET ----------------
 resource "aws_s3_bucket" "website" {
-  bucket = "my-simple-project-001" # change this
+  bucket = "my-simple-project-001"
 }
 
 resource "aws_s3_bucket_website_configuration" "config" {
@@ -53,9 +56,30 @@ resource "aws_s3_bucket_policy" "policy" {
 
 # ---------------- LOGS BUCKET ----------------
 resource "aws_s3_bucket" "logs" {
-  bucket = "my-simple-project-logs-001" # change this
+  bucket = "my-simple-project-logs-001"
 }
 
+# 🔥 IMPORTANT FIX (ALLOW LOG WRITES)
+resource "aws_s3_bucket_policy" "logs_policy" {
+  bucket = aws_s3_bucket.logs.id
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Sid = "AllowS3Logging",
+        Effect = "Allow",
+        Principal = {
+          Service = "logging.s3.amazonaws.com"
+        },
+        Action = "s3:PutObject",
+        Resource = "${aws_s3_bucket.logs.arn}/*"
+      }
+    ]
+  })
+}
+
+# ---------------- ENABLE LOGGING ----------------
 resource "aws_s3_bucket_logging" "logging" {
   bucket = aws_s3_bucket.website.id
 
@@ -71,21 +95,21 @@ resource "aws_sns_topic" "alerts" {
 resource "aws_sns_topic_subscription" "email" {
   topic_arn = aws_sns_topic.alerts.arn
   protocol  = "email"
-  endpoint  = "ktsushandh978@gmail.com" # change this
+  endpoint  = "ktsushandh978@gmail.com"
 }
 
-# ---------------- IAM ROLE ----------------
+# ---------------- IAM ----------------
 resource "aws_iam_role" "lambda_role" {
   name = "lambda-s3-sns-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Action = "sts:AssumeRole",
       Effect = "Allow",
       Principal = {
         Service = "lambda.amazonaws.com"
-      }
+      },
+      Action = "sts:AssumeRole"
     }]
   })
 }
@@ -119,7 +143,7 @@ resource "aws_iam_role_policy" "lambda_policy" {
   })
 }
 
-# ---------------- LAMBDA CODE (INLINE FILE) ----------------
+# ---------------- LAMBDA FILE ----------------
 resource "local_file" "lambda_py" {
   filename = "${path.module}/lambda.py"
 
@@ -158,7 +182,7 @@ def lambda_handler(event, context):
 EOF
 }
 
-# ---------------- ZIP AUTOMATIC ----------------
+# ---------------- ZIP ----------------
 data "archive_file" "lambda_zip" {
   type        = "zip"
   source_file = local_file.lambda_py.filename
